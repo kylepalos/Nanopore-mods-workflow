@@ -1,28 +1,26 @@
 # Nanopore-mods-workflow
 
-## Updated July 2024
+## Updated April 2025
 This repository documents my current workflow for calling RNA modifications from Nanopore direct RNA-sequencing data (using the current SQK-RNA004 [kit](https://store.nanoporetech.com/us/direct-rna-sequencing-kit-004.html)).
 
 ### Basecall
-Download the latest release of [Dorado](https://github.com/nanoporetech/dorado/releases) basecaller (I'm currently using v0.7.0 - which calls m6A and pseudoUridine).
+Download the latest release of [Dorado](https://github.com/nanoporetech/dorado/releases) basecaller (I'm currently using v0.8.0 - which calls m6A, pseudoUridine, inosine, and m5C).
 
 Then - run Dorado basecaller on POD5 files. Note: Dorado does not support the old version direct RNA-sequencing kits (e.g., SQK-RNA001).
 
 ```
-/dorado-0.7.0-linux-x64/bin/dorado basecaller \
--v hac,m6A \
+/dorado-0.8.0-linux-x64/bin/dorado basecaller \
+-v hac,inosine_m6A,m5C,pseU  \
 --min-qscore 10 \
 --emit-moves \
 path/to/pod5_files/ \
 --estimate-poly-a \
---device "cuda:0" > file.sam
+--device "cuda:0" > file.bam
 ```
 
 Explanation of parameters used:
 
--v hac, m6a: This specifies the model speed used to basecall POD5 files (there are: fast, hac, and sup. [See here.]([url](https://github.com/nanoporetech/dorado#model-selection-foreword)) Additionally, the "m6a" will let the model include the necessary SAM headers to retain modification information.
-
-You could plug in "psU" instead of m6A to call pseudoUridine.
+-v hac,inosine_m6A,m5C,pseU: This specifies the model speed used to basecall POD5 files (there are: fast, hac, and sup. [See here.]([url](https://github.com/nanoporetech/dorado#model-selection-foreword)) Additionally, the following modification options will detect and add the necessary SAM headers to retain modification information.
 
 --min-qscore 10: The minimum -log10 quality score as described by Illumina [here.](https://help.basespace.illumina.com/files-used-by-basespace/quality-scores)
 
@@ -32,16 +30,16 @@ You could plug in "psU" instead of m6A to call pseudoUridine.
 
 --device "cuda:0": Specifies the GPU to basecall.
 
-### Convert SAM to fastq
-Dorado outputs reads in SAM format, but I prefer to have reads in fastq format.
+### Convert BAM to fastq
+Dorado can perform the genome alignment while basecalling but I prefer to customize the parameters myself. Therefore, convert the BAM to fastq.
 
 ```
-samtools fastq -@ 5 -T "*" file.sam > file.fastq
+samtools fastq -@ 5 -T "*" file.bam | gzip > file.fastq.gz
 ```
 
 The important part of this step is:
 
--T "*" which transfers all of the SAM tags to the fastq headers (modification information). 
+-T "*" which transfers all of the header tags to the fastq headers (modification information). 
 
 ### Map using Minimap2
 Map to genome using Minimap2:
@@ -51,7 +49,7 @@ minimap2 -ax splice \
 -uf -k14 \
 -G 10000 \
 -y --secondary=no \
-genome.fasta file.fastq | \
+genome.fasta file.fastq.gz | \
 samtools sort -o file_mapped.bam -
 ```
 
@@ -63,7 +61,7 @@ Some of these parameters, I'm getting from [here.](https://github.com/nanoporete
 
 -G 10000: Maximum intron length - use a shorter value for plants.
 
--y: Transfer fastq tags to output BAM tags (necessary for retaining modification information
+-y: Transfer fastq tags to output BAM tags (necessary for retaining modification information)
 
 --secondary=no: Long reads shouldn't have too many secondary aligments - and if they do - the modification calls may not be too inspiring.
 
