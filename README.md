@@ -84,17 +84,28 @@ Modkit is Nanopore's software for extracting modification information from BAM f
 
 ```
 modkit pileup \
---filter-threshold A:0.8 --mod-thresholds a:0.99 \
---motif RRACH 2 \
---ref genome.fasta file_mapped.bam \
-m6a_pileup.bed
+--mod-thresholds a:0.99 --mod-thresholhds m:0.99 --mod-thresholhds 17802:0.99 --mod-thresholds 17596:0.99 \
+file_mapped.bam \
+mod_pileup.bed
 ```
 
-The pileup subcommand runs through all sites or motifs and generates a probability that the site is modified.
+The pileup command extracts modified sites in [bedmethyl](https://nanoporetech.github.io/modkit/intro_pileup.html#description-of-bedmethyl-output) format.
 
-Filter threshold and mod threshold are parameters that I struggle to explain succinctly, but they deal with the probability thresholds that are necessary for calling modifications at the base in question. Note that filter threshold specifies a capital "A" while mod threshold specifies a lower-case "a". This is the nomenclature that ModKit uses to distinguish an unmodied A from a modified A, respectively. [See here](https://github.com/nanoporetech/modkit/issues/198) where I discuss with the authors on how to arrive at these values.
+The mod thresholds essentially deal with the probability thresholds assigned to the basecallers confidence in the modification of the site.
 
---motif RRACH 2 specifies to only scan RRACH motifs in the genome file provided and the "2" is the 0-based offset to the base in question (the A at the center of RRACH is 2 bases offset).
+a = m6A, m = m5C, 17802 = pseudouridine, 17596 = inosine.
+
+If you want more information on the thresholds, see an github issue I submitted [here](https://github.com/nanoporetech/modkit/issues/198) as well as Modkit's [documentation](https://nanoporetech.github.io/modkit/filtering_details.html).
+
+
+# Threshold considerations:
+This is current as of April, 2025.
+
+I use a mod threshold for every modification type == 0.99 because, for my data, this seems to be the best balance of stringency and comprehensiveness. See plot below:
+
+![mod_probs](https://github.com/user-attachments/assets/dd47e2d4-d617-4620-a0d6-514bc489a114)
+
+This is a histogram of modification probabilities for all 4 RNA mod types currently available with Dorado. As you can see, there is a spike in fraction of calls at very high probabilities - therefore, setting a threshold at 0.99 (the vertical black line) should capture a good fraction of the data while reducing false positives (except for m5C currently.)
 
 
 ## For library prep:
