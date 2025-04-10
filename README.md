@@ -1,8 +1,9 @@
 # Nanopore-mods-workflow
 
-# Updated April 2025
+## Updated April 2025
 This repository documents my current workflow for calling RNA modifications from Nanopore direct RNA-sequencing data (using the current SQK-RNA004 [kit](https://store.nanoporetech.com/us/direct-rna-sequencing-kit-004.html)).
 
+# STEP 1:
 ## Basecall
 Download the latest release of [Dorado](https://github.com/nanoporetech/dorado/releases) basecaller (I'm currently using v0.8.0 - which calls m6A, pseudoUridine, inosine, and m5C).
 
@@ -51,6 +52,7 @@ The important part of this step is:
 **NOTE:** You should skip this step and just use ```--emit-fastq``` when running Dorado. I will update my workflow with these changes in the future.
 
 
+# STEP 2:
 ## Map using Minimap2
 Map to genome using Minimap2:
 
@@ -76,6 +78,7 @@ Some of these parameters, I'm getting from [here.](https://github.com/nanoporete
 --secondary=no: Long reads shouldn't have too many secondary aligments - and if they do - the modification calls may not be too inspiring.
 
 
+# STEP 3:
 ## Call modifications using ModKit
 Modkit is Nanopore's software for extracting modification information from BAM files and generating BED files with necessary statistics, [see here.](https://github.com/nanoporetech/modkit)
 
