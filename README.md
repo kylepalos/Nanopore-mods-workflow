@@ -1,9 +1,9 @@
 # Nanopore-mods-workflow
 
-## Updated April 2025
+# Updated April 2025
 This repository documents my current workflow for calling RNA modifications from Nanopore direct RNA-sequencing data (using the current SQK-RNA004 [kit](https://store.nanoporetech.com/us/direct-rna-sequencing-kit-004.html)).
 
-### Basecall
+## Basecall
 Download the latest release of [Dorado](https://github.com/nanoporetech/dorado/releases) basecaller (I'm currently using v0.8.0 - which calls m6A, pseudoUridine, inosine, and m5C).
 
 Then - run Dorado basecaller on POD5 files. Note: Dorado does not support the old version direct RNA-sequencing kits (e.g., SQK-RNA001).
@@ -30,7 +30,14 @@ Explanation of parameters used:
 
 --device "cuda:0": Specifies the GPU to basecall.
 
-### Convert BAM to fastq
+
+## Automating Dorado for several input projects across different directories.
+I often don't just have a single sample to basecall, but an entire experiment (i.e., replicates and condition - several samples.)
+
+I have a script to automate your Dorado run with input directories and output file names in the **scripts** folder.
+
+
+## Convert BAM to fastq
 Dorado can perform the genome alignment while basecalling but I prefer to customize the parameters myself. Therefore, convert the BAM to fastq.
 
 ```
@@ -41,7 +48,10 @@ The important part of this step is:
 
 -T "*" which transfers all of the header tags to the fastq headers (modification information). 
 
-### Map using Minimap2
+**NOTE:** You should skip this step and just use ```--emit-fastq``` when running Dorado. I will update my workflow with these changes in the future.
+
+
+## Map using Minimap2
 Map to genome using Minimap2:
 
 ```
@@ -65,7 +75,8 @@ Some of these parameters, I'm getting from [here.](https://github.com/nanoporete
 
 --secondary=no: Long reads shouldn't have too many secondary aligments - and if they do - the modification calls may not be too inspiring.
 
-### Call modifications using ModKit
+
+## Call modifications using ModKit
 Modkit is Nanopore's software for extracting modification information from BAM files and generating BED files with necessary statistics, [see here.](https://github.com/nanoporetech/modkit)
 
 ```
@@ -81,6 +92,7 @@ The pileup subcommand runs through all sites or motifs and generates a probabili
 Filter threshold and mod threshold are parameters that I struggle to explain succinctly, but they deal with the probability thresholds that are necessary for calling modifications at the base in question. Note that filter threshold specifies a capital "A" while mod threshold specifies a lower-case "a". This is the nomenclature that ModKit uses to distinguish an unmodied A from a modified A, respectively. [See here](https://github.com/nanoporetech/modkit/issues/198) where I discuss with the authors on how to arrive at these values.
 
 --motif RRACH 2 specifies to only scan RRACH motifs in the genome file provided and the "2" is the 0-based offset to the base in question (the A at the center of RRACH is 2 bases offset).
+
 
 ## For library prep:
 SQK-RNA004 allows you to use total or poly-A enriched RNA for library prep. We wanted to whether total RNA input would match poly-A enriched RNA in terms of quantification.
